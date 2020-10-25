@@ -77,10 +77,6 @@ do
         SHOULD_INITIALIZE=1
         shift 
         ;;
-        -m=*|--method=*)
-        INSTALL_METHOD="${arg#*=}"
-        shift
-        ;;
         -d=*|--distro=*)
         INSTALL_DISTRO="${arg#*=}"
         shift
