@@ -9,24 +9,27 @@ installpkg(){
   PACKAGE=$1
   SOURCE=$2
   REPO=$3
+  LEVEL=$4
   
   echo "=> installing $PACKAGE distro $INSTALL_DISTRO via $INSTALL_METHOD $SOURCE";
-  
-  if [ -z "$SOURCE" ] 
-  then
-  	if [ $INSTALL_DISTRO == "flat" ]; then flatpak install flathub $PACKAGE --noninteractive --user;
-  	elif [ $INSTALL_DISTRO == "ubuntu" ]; then sudo apt install $PACKAGE --yes
-  	elif [ $INSTALL_DISTRO == "solus" ]; then sudo eopkg install $PACKAGE --yes-all
-  	elif [ $INSTALL_DISTRO == "arch" ]; then yes | sudo pacman -S $PACKAGE;
-  	fi
+  if [ $PACKAGE != "-" ]; then
+	  if [ -z "$SOURCE" ] 
+	  then
+	  	if [ $INSTALL_DISTRO == "flat" ]; then flatpak install flathub $PACKAGE --noninteractive --user;
+	  	elif [ $INSTALL_DISTRO == "ubuntu" ]; then sudo apt install $PACKAGE --yes
+	  	elif [ $INSTALL_DISTRO == "solus" ]; then sudo eopkg install $PACKAGE --yes-all
+	  	elif [ $INSTALL_DISTRO == "arch" ]; then yes | sudo pacman -S $PACKAGE;
+	  	fi
+	  else
+	  	if [ $SOURCE == "flatOnly" ]; then flatpak install $REPO $PACKAGE --noninteractive --$LEVEL;
+	  	elif [ $SOURCE == "debOnly" ] && [ $INSTALL_DISTRO == "ubuntu" ]; then sudo apt install $PACKAGE --yes;
+	  	elif [ $SOURCE == "solusOnly" ] && [ $INSTALL_DISTRO == "solus" ]; then sudo eopkg install $PACKAGE --yes;
+	  	elif [ $SOURCE == "aurOnly" ] && [ $INSTALL_DISTRO == "arch" ]; then yay -S --noconfirm --nodiffmenu --mflags --skipinteg --needed $PACKAGE;
+	  	elif [ $SOURCE == "archOnly" ] && [ $INSTALL_DISTRO == "arch" ]; then sudo pacman -S --noconfirm --needed $PACKAGE;
+	  	fi
+	  fi
   else
-  	if [ $SOURCE == "flatOnly" ]; then 
-  		if [ -z $REPO ]; then flatpak install flathub $PACKAGE --noninteractive --system; else flatpak install $REPO $PACKAGE --noninteractive --system;fi
-  	elif [ $SOURCE == "debOnly" ] && [ $INSTALL_DISTRO == "ubuntu" ]; then sudo apt install $PACKAGE --yes;
-  	elif [ $SOURCE == "solusOnly" ] && [ $INSTALL_DISTRO == "solus" ]; then sudo eopkg install $PACKAGE --yes;
-  	elif [ $SOURCE == "aurOnly" ] && [ $INSTALL_DISTRO == "arch" ]; then yay -S --noconfirm $PACKAGE;
-  	elif [ $SOURCE == "archOnly" ] && [ $INSTALL_DISTRO == "arch" ]; then sudo pacman -S --noconfirm $PACKAGE;
-  	fi
+  	echo "=> A package was skippet as it was set to: $PACKAGE"
   fi
 }
 installalt(){
@@ -34,16 +37,11 @@ installalt(){
   ALT2=$2 #ubuntu/deb
   ALT3=$3 #solus/eopkg
   ALT4=$4 #arch/aur
-  if [ "$*" != "-" ]; then
-  	if [ "$INSTALL_DISTRO" == "flat" ]; then installpkg $ALT1;
-  	elif [ "$INSTALL_DISTRO" == "ubuntu" ]; then installpkg $ALT2;
-  	elif [ "$INSTALL_DISTRO" == "solus" ]; then installpkg $ALT3;
-  	elif [ "$INSTALL_DISTRO" == "arch" ]; then installpkg $ALT4;
-  	fi;
-  else
-  	echo "=> Skipping next package as it was set to - | Parameters sent: $ALT1, $ALT2, $ALT3, $ALT4"
-  	
-  fi
+  if [ "$INSTALL_DISTRO" == "flat" ]; then installpkg $ALT1;
+  elif [ "$INSTALL_DISTRO" == "ubuntu" ]; then installpkg $ALT2;
+  elif [ "$INSTALL_DISTRO" == "solus" ]; then installpkg $ALT3;
+  elif [ "$INSTALL_DISTRO" == "arch" ]; then installpkg $ALT4;
+  fi;
 }
 
 installppa(){
@@ -136,7 +134,7 @@ echo "Install packages"
 #flatpak ubuntu solus arch
 installalt - gufw gufw gufw
 installalt com.discordapp.Discord discord discord discord #discord
-installalt org.signal.Signal signal-desktop signal-desktop signal-desktop #signal
+installalt org.signal.Signal signal-desktop signal-desktop - #signal
 installalt org.telegram.desktop telegram-desktop telegram telegram-desktop #telegram
 installalt com.valvesoftware.Steam steam steam steam-manjaro #steam
 installalt org.vlc.videolan VLC vlc vlc #vlc
@@ -149,11 +147,9 @@ installalt - gnome-tweaks gnome-tweaks gnome-tweaks #gnome-tweaks
 installalt - gnome-sushi gnome-sushi sushi #gnome-sushi
 
 #Flat only
-installpkg com.bitwarden.desktop flatOnly #Bitwarden
-installpkg us.zoom.Zoom flatonly #Zoom
-
-#Flat only special sources
-installpkg eu.tiliado.NuvolaAppYoutubeMusic flatOnly nuvola #Youtube Music
+installpkg com.bitwarden.desktop flatOnly flathub system #Bitwarden
+installpkg us.zoom.Zoom flatonly flathub system #Zoom
+installpkg eu.tiliado.NuvolaAppYoutubeMusic flatOnly nuvola user #Youtube Music
 
 #Ubuntu only
 if [ $INSTALL_DISTRO == "ubuntu" ]; then
@@ -166,6 +162,7 @@ if [ $INSTALL_DISTRO == "arch" ]; then
 	installpkg megasync aurOnly #mega
 	installpkg standardnotes-desktop aurOnly #standard-notes
 	installpkg appimagelauncher archOnly #standard-notes
+	installpkg org.signal.Signal flatonly flathub system #signal
 fi
 
 #Solus only
@@ -192,5 +189,6 @@ echo "@ AppImages"
 echo "~ Deb"
 	echo "~~ ocs-url https://www.opendesktop.org/p/1136805/"
 	echo ""
-echo "? Gits"
+echo "? Extras"
 	echo "?? Sennheiser GSX1000 https://github.com/evilphish/sennheiser-gsx-1000"
+	echo "?? PopOS boot animation https://www.reddit.com/r/pop_os/comments/8ga9um/boot_screen/dzi9cz4/"
