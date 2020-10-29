@@ -15,19 +15,20 @@ installpkg(){
   if [ "$PACKAGE" != "-" ]; then
 	  if [ -z "$SOURCE" ] 
 	  then
-	  	if [ $INSTALL_DISTRO == "flat" ]; then flatpak install flathub $PACKAGE --noninteractive --user;
+	  	if [ $INSTALL_DISTRO == "flat" ]; then flatpak install flathub $PACKAGE --noninteractive --$LEVEL --assumeyes;
 	  	elif [ $INSTALL_DISTRO == "ubuntu" ]; then sudo apt install $PACKAGE --yes
 	  	elif [ $INSTALL_DISTRO == "solus" ]; then sudo eopkg install $PACKAGE --yes-all
 	  	elif [ $INSTALL_DISTRO == "arch" ]; then yes | sudo pacman -S $PACKAGE;
 	  	elif [ $INSTALL_DISTRO == "fedora" ]; then sudo dnf install $PACKAGE -y;
 	  	fi
 	  else
-	  	if [ $SOURCE == "flatOnly" ]; then flatpak install $REPO $PACKAGE --noninteractive --$LEVEL;
+	  	if [ $SOURCE == "flatOnly" ]; then flatpak install $REPO $PACKAGE --noninteractive --$LEVEL --assumeyes;
 	  	elif [ $SOURCE == "debOnly" ] && [ $INSTALL_DISTRO == "ubuntu" ]; then sudo apt install $PACKAGE --yes;
 	  	elif [ $SOURCE == "solusOnly" ] && [ $INSTALL_DISTRO == "solus" ]; then sudo eopkg install $PACKAGE --yes;
 	  	elif [ $SOURCE == "aurOnly" ] && [ $INSTALL_DISTRO == "arch" ]; then yay -S --noconfirm --nodiffmenu --mflags --skipinteg --needed $PACKAGE;
 	  	elif [ $SOURCE == "archOnly" ] && [ $INSTALL_DISTRO == "arch" ]; then sudo pacman -S --noconfirm --needed $PACKAGE;
 	  	elif [ $SOURCE == "dnfOnly" ] && [ $INSTALL_DISTRO == "fedora" ]; then sudo dnf install $PACKAGE -y;
+	  	elif [ $SOURCE == "snapOnly" ]; then sudo snap install $PACKAGE --$REPO;
 	  	fi
 	  fi
   else
@@ -72,9 +73,12 @@ installapt(){
 
 installeopkg(){
 	echo "=> add specil repo Solus"
-	sudo eopkg add-repo Cantalupo https://solus.cantalupo.com.br/eopkg-index.xml.xz
+	sudo eopkg add-repo Cantalupo https://solus.cantalupo.com.br/eopkg-index.xml.xz -y
 	echo "=> special install:microsoft-edge-dev"
-	sudo eopkg bi --ignore-safety https://raw.githubusercontent.com/prateekmedia/3rdParty/main/browser/microsoft-edge-dev/pspec.xml && sudo eopkg it microsoft-edge-dev*.eopkg && sudo rm microsoft-edge-dev*.eopkg
+	sudo eopkg bi --ignore-safety https://raw.githubusercontent.com/prateekmedia/3rdParty/main/browser/microsoft-edge-dev/pspec.xml -y && sudo eopkg it microsoft-edge-dev*.eopkg -y && sudo rm microsoft-edge-dev*.eopkg
+	sudo eopkg install xclip -y #screenshots fix
+	sudo eopkg install budgie-screenshot-applet -y #screenshots fix
+	sudo eopkg install spectacle -y #spectacle for screenshots fix
 
 }
 
@@ -160,7 +164,7 @@ then
 		
 	elif [ $INSTALL_DISTRO == "solus" ] 
 	then
-		sudo eopkg upgrade #run upgrades
+		sudo eopkg upgrade -y #run upgrades
 		installeopkg #install eopkg specific 
 	elif [ $INSTALL_DISTRO == "arch" ] 
 	then
@@ -176,10 +180,14 @@ then
 	
 	echo "=> add Flatpak repos"
 	#flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo --user
-	#flatpak remote-add --if-not-exists nuvola https://dl.tiliado.eu/flatpak/nuvola.flatpakrepo --user
+	flatpak remote-add --if-not-exists nuvola https://dl.tiliado.eu/flatpak/nuvola.flatpakrepo --user
 	flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo --system
-	flatpak remote-add --if-not-exists nuvola https://dl.tiliado.eu/flatpak/nuvola.flatpakrepo --system
+	#flatpak remote-add --if-not-exists nuvola https://dl.tiliado.eu/flatpak/nuvola.flatpakrepo --system
 	flatpak update
+	
+	echo "=> add snap support"
+	installalt - snapd snapd - snapd #snapd
+	
 fi
 
 echo "Install packages"
@@ -200,10 +208,18 @@ installalt - gnome-tweaks gnome-tweaks gnome-tweaks gnome-tweak-tool #gnome-twea
 installalt - gnome-sushi gnome-sushi sushi sushi #gnome-sushi
 installalt - evolution - - evolution #evolution email client/calendar sync
 installalt - evolution-ews - - evolution-ews #evolution email client/calendar sync
+installalt com.visualstudio.code code code code vs-code #visual studio code
 
 #Flat only
 installpkg com.bitwarden.desktop flatOnly flathub system #Bitwarden
-installpkg eu.tiliado.NuvolaAppYoutubeMusic flatOnly nuvola user #Youtube Music
+installpkg us.zoom.Zoom flatOnly flathub system #Zoom
+#installpkg eu.tiliado.NuvolaAppYoutubeMusic flatOnly nuvola user #Youtube Music
+
+#Snap only
+installpkg fake-app-jeremy snapOnly stable # snaps usually fail to install the first time is run hence this ugly hack
+installpkg youtube-music-desktop-app snapOnly stable #youtube-music-player
+installpkg authy snapOnly beta #authy-beta
+installpkg standard-notes snapOnly stable #standard-notes
 
 #Ubuntu only
 if [ $INSTALL_DISTRO == "ubuntu" ]; then
